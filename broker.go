@@ -166,17 +166,17 @@ func (b *Broker) Open(conf *Config) error {
 				tcpConn, err := conf.Net.Proxy.Dialer.Dial("tcp", b.addr)
 				if err != nil {
 					b.connErr = err
-					return
+				} else {
+					tlsConn := tls.Client(tcpConn, conf.Net.TLS.Config)
+					err = tlsConn.Handshake()
+					if err != nil {
+						tlsConn.Close()
+						b.connErr = err
+					} else {
+						b.conn = tlsConn
+						b.connErr = nil
+					}
 				}
-				tlsConn := tls.Client(tcpConn, conf.Net.TLS.Config)
-				err = tlsConn.Handshake()
-				if err != nil {
-					tlsConn.Close()
-					b.connErr = err
-					return
-				}
-				b.conn = tlsConn
-				b.connErr = nil
 			}
 		} else if conf.Net.Proxy.Enable {
 			b.conn, b.connErr = conf.Net.Proxy.Dialer.Dial("tcp", b.addr)
